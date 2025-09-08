@@ -1,5 +1,5 @@
 from pydantic import BaseModel, EmailStr, ConfigDict
-from typing import Optional
+from typing import Optional, List
 from datetime import datetime
 from .models import RequestStatus, TimeOffType
 
@@ -30,7 +30,33 @@ class User(UserBase):
     id: int
     is_active: bool
     is_manager: bool
+    is_superuser: bool
     unit_id: Optional[int]
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class UnitBase(BaseModel):
+    name: str
+
+
+class UnitCreate(UnitBase):
+    pass
+
+
+class Unit(UnitBase):
+    id: int
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class UserUpdate(BaseModel):
+    is_manager: bool
+    unit_ids: Optional[List[int]] = None
+
+
+class UserWithUnits(User):
+    managed_units: List[Unit] = []
 
     model_config = ConfigDict(from_attributes=True)
 

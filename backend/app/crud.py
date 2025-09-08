@@ -9,13 +9,21 @@ def get_user_by_email(db: Session, email: str):
     return db.query(models.User).filter(models.User.email == email).first()
 
 
-def create_user(db: Session, user: schemas.UserCreate, is_manager: bool = False, unit_id: int = None, full_name: str = None):
+def create_user(
+    db: Session,
+    user: schemas.UserCreate,
+    is_manager: bool = False,
+    is_superuser: bool = False,
+    unit_id: int | None = None,
+    full_name: str | None = None,
+):
     hashed_password = pwd_context.hash(user.password)
     db_user = models.User(
         email=user.email,
         hashed_password=hashed_password,
         full_name=user.full_name or full_name,
         is_manager=is_manager,
+        is_superuser=is_superuser,
         unit_id=unit_id,
     )
     db.add(db_user)
@@ -62,7 +70,16 @@ def create_timeoff_request(db: Session, user_id: int, request: schemas.TimeOffRe
 
 
 def get_requests_for_manager(db: Session, manager: models.User):
-    return db.query(models.TimeOffRequest).join(models.User).filter(models.User.unit_id == manager.unit_id).all()
+    # return timeoff requests for users in units managed by this manager
+    unit_ids = [u.id for u in manager.managed_units]
+    if not unit_ids:
+        return []
+    return (
+        db.query(models.TimeOffRequest)
+        .join(models.User)
+        .filter(models.User.unit_id.in_(unit_ids))
+        .all()
+    )
 
 
 def update_request_status(db: Session, request_id: int, status):
@@ -72,3 +89,34 @@ def update_request_status(db: Session, request_id: int, status):
         db.commit()
         db.refresh(req)
     return req
+
+
+def get_units(db: Session):
+    return db.query(models.Unit).all()
+
+
+def create_unit(db: Session, name: str):
+    unit = models.Unit(name=name)
+    db.add(unit)
+    db.commit()
+    db.refresh(unit)
+    return unit
+
+
+def get_users(db: Session):
+    return db.query(models.User).all()
+
+
+def update_user_manager(
+    db: Session, user_id: int, is_manager: bool, unit_ids: list[int] | None = None
+):
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+    if not user:
+        return None
+    user.is_manager = is_manager
+    if unit_ids is not None:
+        units = db.query(models.Unit).filter(models.Unit.id.in_(unit_ids)).all()
+        user.managed_units = units
+    db.commit()
+    db.refresh(user)
+    return user

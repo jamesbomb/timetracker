@@ -5,6 +5,7 @@ interface BackendUser {
   email: string;
   full_name?: string;
   is_manager: boolean;
+  is_superuser: boolean;
   unit_id?: number;
 }
 

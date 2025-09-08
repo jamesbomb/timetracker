@@ -1,8 +1,16 @@
 import enum
 from datetime import datetime
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, Enum, ForeignKey
+from sqlalchemy import Column, Integer, String, Boolean, DateTime, Enum, ForeignKey, Table
 from sqlalchemy.orm import relationship
 from .database import Base
+
+# association table for managers to multiple units
+manager_units = Table(
+    "manager_units",
+    Base.metadata,
+    Column("user_id", Integer, ForeignKey("users.id"), primary_key=True),
+    Column("unit_id", Integer, ForeignKey("units.id"), primary_key=True),
+)
 
 
 class RequestStatus(str, enum.Enum):
@@ -21,6 +29,11 @@ class Unit(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(255), unique=True, index=True)
     users = relationship("User", back_populates="unit")
+    managers = relationship(
+        "User",
+        secondary=manager_units,
+        back_populates="managed_units",
+    )
 
 
 class User(Base):
@@ -31,9 +44,15 @@ class User(Base):
     full_name = Column(String(255), nullable=True)
     is_active = Column(Boolean, default=True)
     is_manager = Column(Boolean, default=False)
+    is_superuser = Column(Boolean, default=False)
     unit_id = Column(Integer, ForeignKey("units.id"), nullable=True)
     unit = relationship("Unit", back_populates="users")
     requests = relationship("TimeOffRequest", back_populates="user")
+    managed_units = relationship(
+        "Unit",
+        secondary=manager_units,
+        back_populates="managers",
+    )
 
 
 class TimeOffRequest(Base):

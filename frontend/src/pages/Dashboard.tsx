@@ -84,6 +84,9 @@ const Dashboard: React.FC = () => {
     <div>
       <h2>Buongiorno, {currentUser?.full_name || currentUser?.email}</h2>
       <button onClick={handleLogout}>Logout</button>
+      {currentUser?.is_superuser && (
+        <button onClick={() => navigate('/admin')}>Admin</button>
+      )}
 
       <h3>Ferie/Permessi futuri approvati</h3>
       {loading ? (

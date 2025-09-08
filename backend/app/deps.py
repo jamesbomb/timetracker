@@ -49,3 +49,9 @@ def get_current_manager(current_user = Depends(get_current_active_user)):
     if not current_user.is_manager:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not enough privileges")
     return current_user
+
+
+def get_current_superuser(current_user = Depends(get_current_active_user)):
+    if not getattr(current_user, 'is_superuser', False):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not enough privileges")
+    return current_user

@@ -4,7 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.requests import Request
 
 from .database import engine, Base
-from .routers import auth, timeoff, manager
+from .routers import auth, timeoff, manager, admin
 
 Base.metadata.create_all(bind=engine)
 
@@ -29,3 +29,4 @@ async def add_coop_header(request: Request, call_next):
 app.include_router(auth.router)
 app.include_router(timeoff.router)
 app.include_router(manager.router)
+app.include_router(admin.router)
