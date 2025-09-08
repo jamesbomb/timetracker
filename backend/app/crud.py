@@ -6,7 +6,17 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 def get_user_by_email(db: Session, email: str):
-    return db.query(models.User).filter(models.User.email == email).first()
+    from sqlalchemy.orm import joinedload
+
+    return (
+        db.query(models.User)
+        .options(
+            joinedload(models.User.units).joinedload(models.Unit.managers),
+            joinedload(models.User.managed_units),
+        )
+        .filter(models.User.email == email)
+        .first()
+    )
 
 
 def create_user(
@@ -73,18 +83,43 @@ def get_requests_for_manager(db: Session, manager: models.User):
     unit_ids = [u.id for u in manager.managed_units]
     if not unit_ids:
         return []
+
+    # get all users that belong to the units managed by this manager
+    managed_users = (
+        db.query(models.User)
+        .join(models.user_units)
+        .filter(models.user_units.c.unit_id.in_(unit_ids))
+        .all()
+    )
+
+    managed_user_ids = [user.id for user in managed_users]
+
+    if not managed_user_ids:
+        return []
+
+    from sqlalchemy.orm import joinedload
+
     return (
         db.query(models.TimeOffRequest)
-        .join(models.User)
-        .filter(models.User.unit_id.in_(unit_ids))
+        .options(joinedload(models.TimeOffRequest.user))
+        .filter(models.TimeOffRequest.user_id.in_(managed_user_ids))
         .all()
     )
 
 
-def update_request_status(db: Session, request_id: int, status):
-    req = db.query(models.TimeOffRequest).filter(models.TimeOffRequest.id == request_id).first()
+def update_request_status(
+    db: Session, request_id: int, status, rejection_reason: str = None
+):
+    req = (
+        db.query(models.TimeOffRequest)
+        .join(models.User)
+        .filter(models.TimeOffRequest.id == request_id)
+        .first()
+    )
     if req:
         req.status = status
+        if rejection_reason is not None:
+            req.rejection_reason = rejection_reason
         db.commit()
         db.refresh(req)
     return req
@@ -103,19 +138,45 @@ def create_unit(db: Session, name: str):
 
 
 def get_users(db: Session):
-    return db.query(models.User).all()
+    from sqlalchemy.orm import joinedload
+
+    return (
+        db.query(models.User)
+        .options(joinedload(models.User.units), joinedload(models.User.managed_units))
+        .all()
+    )
 
 
 def update_user_manager(
-    db: Session, user_id: int, is_manager: bool, unit_ids: list[int] | None = None
+    db: Session,
+    user_id: int,
+    is_manager: bool,
+    managed_unit_ids: list[int] | None = None,
+    member_unit_ids: list[int] | None = None,
 ):
     user = db.query(models.User).filter(models.User.id == user_id).first()
     if not user:
         return None
     user.is_manager = is_manager
-    if unit_ids is not None:
-        units = db.query(models.Unit).filter(models.Unit.id.in_(unit_ids)).all()
-        user.managed_units = units
+
+    # update managed units (units the user manages)
+    if managed_unit_ids is not None:
+        managed_units = (
+            db.query(models.Unit).filter(models.Unit.id.in_(managed_unit_ids)).all()
+            if managed_unit_ids
+            else []
+        )
+        user.managed_units = managed_units
+
+    # update member units (units the user belongs to)
+    if member_unit_ids is not None:
+        member_units = (
+            db.query(models.Unit).filter(models.Unit.id.in_(member_unit_ids)).all()
+            if member_unit_ids
+            else []
+        )
+        user.units = member_units
+
     db.commit()
     db.refresh(user)
     return user

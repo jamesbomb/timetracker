@@ -2,13 +2,15 @@ import './App.css';
 
 import { Navigate, Route, BrowserRouter as Router, Routes } from 'react-router-dom';
 
+import AdminNew from './pages/AdminNew';
+import AdminRoute from './components/AdminRoute';
 import { AuthProvider } from './contexts/AuthContext';
 import Dashboard from './pages/Dashboard';
 import Login from './pages/Login';
+import Manager from './pages/Manager';
+import ManagerRoute from './components/ManagerRoute';
 import PrivateRoute from './components/PrivateRoute';
 import Signup from './pages/Signup';
-import Admin from './pages/Admin';
-import AdminRoute from './components/AdminRoute';
 
 function App() {
   return (
@@ -27,8 +29,17 @@ function App() {
             path="/admin"
             element={
               <AdminRoute>
-                <Admin />
+                {/* <Admin /> */}
+                <AdminNew />
               </AdminRoute>
+            }
+          />
+          <Route
+            path="/manager"
+            element={
+              <ManagerRoute>
+                <Manager />
+              </ManagerRoute>
             }
           />
           <Route path="/signup" element={<Signup />} />

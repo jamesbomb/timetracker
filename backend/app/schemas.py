@@ -31,7 +31,8 @@ class User(UserBase):
     is_active: bool
     is_manager: bool
     is_superuser: bool
-    unit_id: Optional[int]
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -46,17 +47,21 @@ class UnitCreate(UnitBase):
 
 class Unit(UnitBase):
     id: int
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
 
     model_config = ConfigDict(from_attributes=True)
 
 
 class UserUpdate(BaseModel):
     is_manager: bool
-    unit_ids: Optional[List[int]] = None
+    managed_unit_ids: Optional[List[int]] = None  # Unità che gestisce
+    member_unit_ids: Optional[List[int]] = None  # Unità a cui appartiene
 
 
 class UserWithUnits(User):
-    managed_units: List[Unit] = []
+    units: List[Unit] = []  # Unità a cui appartiene
+    managed_units: List[Unit] = []  # Unità che gestisce
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -75,7 +80,16 @@ class TimeOffRequest(TimeOffRequestBase):
     id: int
     user_id: int
     status: RequestStatus
+    rejection_reason: Optional[str] = None
     created_at: datetime
     updated_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class TimeOffRequestWithUser(TimeOffRequest):
+    user: User
+
+
+class RejectRequest(BaseModel):
+    rejection_reason: str

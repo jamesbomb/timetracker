@@ -18,13 +18,24 @@ def create_request(
     current_user=Depends(get_current_active_user),
 ):
     req = crud.create_timeoff_request(db, current_user.id, request)
-    if current_user.unit and current_user.unit.users:
-        manager = next((u for u in current_user.unit.users if u.is_manager), None)
-        if manager:
-            subject = "New TimeOff Request"
-            body = (
-                f"User {current_user.full_name or current_user.email} requested {request.type}"
-                f" from {request.start_date} to {request.end_date}."
-            )
+
+    # trova tutti i manager delle unità a cui appartiene l'utente
+    managers_to_notify = set()
+    for unit in current_user.units:
+        for manager in unit.managers:
+            if (
+                manager.id != current_user.id
+            ):  # Non notificare se stesso se è anche manager
+                managers_to_notify.add(manager)
+
+    # invia email a tutti i manager
+    if managers_to_notify:
+        subject = "New TimeOff Request"
+        body = (
+            f"User {current_user.full_name or current_user.email} requested {request.type}"
+            f" from {request.start_date} to {request.end_date}."
+        )
+        for manager in managers_to_notify:
             send_email(background_tasks, manager.email, subject, body)
+
     return req

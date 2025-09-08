@@ -1,6 +1,16 @@
 import enum
 from datetime import datetime
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, Enum, ForeignKey, Table
+from sqlalchemy import (
+    Column,
+    Integer,
+    String,
+    Boolean,
+    DateTime,
+    Enum,
+    ForeignKey,
+    Table,
+    Text,
+)
 from sqlalchemy.orm import relationship
 from .database import Base
 
@@ -9,6 +19,17 @@ manager_units = Table(
     Base.metadata,
     Column("user_id", Integer, ForeignKey("users.id"), primary_key=True),
     Column("unit_id", Integer, ForeignKey("units.id"), primary_key=True),
+    Column("created_at", DateTime, default=datetime.utcnow),
+    Column("updated_at", DateTime, default=datetime.utcnow, onupdate=datetime.utcnow),
+)
+
+user_units = Table(
+    "user_units",
+    Base.metadata,
+    Column("user_id", Integer, ForeignKey("users.id"), primary_key=True),
+    Column("unit_id", Integer, ForeignKey("units.id"), primary_key=True),
+    Column("created_at", DateTime, default=datetime.utcnow),
+    Column("updated_at", DateTime, default=datetime.utcnow, onupdate=datetime.utcnow),
 )
 
 
@@ -27,7 +48,13 @@ class Unit(Base):
     __tablename__ = "units"
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(255), unique=True, index=True)
-    users = relationship("User", back_populates="unit")
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    members = relationship(
+        "User",
+        secondary=user_units,
+        back_populates="units",
+    )
     managers = relationship(
         "User",
         secondary=manager_units,
@@ -44,9 +71,14 @@ class User(Base):
     is_active = Column(Boolean, default=True)
     is_manager = Column(Boolean, default=False)
     is_superuser = Column(Boolean, default=False)
-    unit_id = Column(Integer, ForeignKey("units.id"), nullable=True)
-    unit = relationship("Unit", back_populates="users")
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     requests = relationship("TimeOffRequest", back_populates="user")
+    units = relationship(
+        "Unit",
+        secondary=user_units,
+        back_populates="members",
+    )
     managed_units = relationship(
         "Unit",
         secondary=manager_units,
@@ -62,6 +94,7 @@ class TimeOffRequest(Base):
     end_date = Column(DateTime, nullable=False)
     type = Column(Enum(TimeOffType), default=TimeOffType.leave)
     status = Column(Enum(RequestStatus), default=RequestStatus.pending)
+    rejection_reason = Column(Text, nullable=True)  # Motivazione del rifiuto
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     user = relationship("User", back_populates="requests")

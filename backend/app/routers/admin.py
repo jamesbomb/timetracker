@@ -36,7 +36,13 @@ def update_user(
     db: Session = Depends(get_db),
     current_user=Depends(get_current_superuser),
 ):
-    updated = crud.update_user_manager(db, user_id, user_upd.is_manager, user_upd.unit_ids)
+    updated = crud.update_user_manager(
+        db,
+        user_id,
+        user_upd.is_manager,
+        user_upd.managed_unit_ids,
+        user_upd.member_unit_ids,
+    )
     if not updated:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
     return updated
