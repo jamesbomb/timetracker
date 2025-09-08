@@ -41,6 +41,8 @@ Questo è un prototipo funzionante di un sistema per la gestione di ferie e perm
    python3 -m venv .venv
    source .venv/bin/activate
    pip install -r requirements.txt
+   # Esegui le migrazioni del database con Alembic
+   alembic upgrade head
    uvicorn app.main:app --reload
    ```
 
@@ -54,8 +56,3 @@ Questo è un prototipo funzionante di un sistema per la gestione di ferie e perm
    ```
 
 Apri http://localhost:5173 (o la porta indicata dagli script di vite) nel browser. L'app comunicherà con il backend FastAPI su http://localhost:8000.
-
-## Note
-
-- Questo è un prototipo minimo. Puoi estenderlo con migrazioni, miglioramenti grafici, funzionalità addizionali o test.
-- Consulta `tasks.txt` per i dettagli del test e delle funzionalità richieste.

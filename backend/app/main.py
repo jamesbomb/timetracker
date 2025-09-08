@@ -6,7 +6,8 @@ from fastapi.requests import Request
 from .database import engine, Base
 from .routers import auth, timeoff, manager, admin
 
-Base.metadata.create_all(bind=engine)
+# use alembic for database migrations. automatic table creation disabled.
+# Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="Holidays and TimeOff Management API")
 
@@ -21,7 +22,7 @@ app.add_middleware(
 @app.middleware("http")
 async def add_coop_header(request: Request, call_next):
     response = await call_next(request)
-    # Disabilitiamo temporaneamente COOP per evitare problemi con il popup di Google
+    # disabilito temporaneamente COOP per evitare problemi con il popup di Google
     # response.headers["Cross-Origin-Opener-Policy"] = "same-origin-allow-popups"
     # response.headers["Cross-Origin-Embedder-Policy"] = "require-corp"
     return response

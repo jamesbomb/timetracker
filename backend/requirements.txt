@@ -9,3 +9,4 @@ email-validator
 requests
 google-auth
 python-multipart
+alembic
