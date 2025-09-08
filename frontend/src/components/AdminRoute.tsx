@@ -6,11 +6,6 @@ interface AdminRouteProps {
   children: ReactElement;
 }
 
-/**
- * Route guard for superadmin users.
- * Redirects non-authenticated users to login,
- * and non-superusers to the dashboard.
- */
 function AdminRoute({ children }: AdminRouteProps) {
   const { currentUser, token } = useAuth();
 

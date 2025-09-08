@@ -6,7 +6,9 @@ from fastapi.requests import Request
 from .database import engine, Base
 from .routers import auth, timeoff, manager, admin
 
-# use alembic for database migrations. automatic table creation disabled.
+"""
+Database tables are managed via Alembic migrations.
+"""
 # Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="Holidays and TimeOff Management API")

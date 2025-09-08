@@ -4,7 +4,6 @@ from sqlalchemy import Column, Integer, String, Boolean, DateTime, Enum, Foreign
 from sqlalchemy.orm import relationship
 from .database import Base
 
-# association table for managers to multiple units
 manager_units = Table(
     "manager_units",
     Base.metadata,

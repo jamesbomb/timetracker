@@ -70,7 +70,6 @@ def create_timeoff_request(db: Session, user_id: int, request: schemas.TimeOffRe
 
 
 def get_requests_for_manager(db: Session, manager: models.User):
-    # return timeoff requests for users in units managed by this manager
     unit_ids = [u.id for u in manager.managed_units]
     if not unit_ids:
         return []
