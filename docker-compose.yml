@@ -1,7 +1,10 @@
+# Docker Compose legge il file .env dalla stessa directory
+# Copiare docker.env.example in .env e configurare le proprie credenziali Firebase
+
 services:
   mysql:
     image: mysql:8.0
-    container_name: holidays-db
+    container_name: tempocasa-mysql
     restart: unless-stopped
     environment:
       MYSQL_ROOT_PASSWORD: password
@@ -12,20 +15,83 @@ services:
       - "3306:3306"
     volumes:
       - mysql_data:/var/lib/mysql
+    networks:
+      - tempocasa-network
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1"]
       interval: 10s
-      retries: 5
+      timeout: 20s
+      retries: 10
 
   mailhog:
     image: mailhog/mailhog:latest
     container_name: tempocasa-mailhog
     restart: unless-stopped
     ports:
-      - "1025:1025"  # SMTP server
-      - "8025:8025"  # Web UI
+      - "1025:1025"
+      - "8025:8025"
     logging:
-      driver: 'none'  # Disable excessive logging
+      driver: 'none'
+    networks:
+      - tempocasa-network
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: tempocasa-backend
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: mysql+pymysql://user:password@mysql:3306/dbname
+      SECRET_KEY: your-secret-key-change-this-in-production
+      ALGORITHM: HS256
+      ACCESS_TOKEN_EXPIRE_MINUTES: 30
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-403868323136-fnb6c48jojgst876jcrmkviipe9ujpj5.apps.googleusercontent.com}
+      CORS_ORIGINS: http://localhost:5173,http://localhost:3000
+      SMTP_HOST: mailhog
+      SMTP_PORT: 1025
+      SMTP_USER: noreply@tempocasa-timetracker.local
+      SMTP_PASSWORD: ""
+      SMTP_USE_TLS: "false"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      mailhog:
+        condition: service_started
+    networks:
+      - tempocasa-network
+    volumes:
+      - ./backend/app:/app/app
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: http://localhost:8000
+        # Firebase configuration
+        VITE_FIREBASE_API_KEY: ${VITE_FIREBASE_API_KEY:-your-firebase-api-key}
+        VITE_FIREBASE_AUTH_DOMAIN: ${VITE_FIREBASE_AUTH_DOMAIN:-tempocasa-timetracker.firebaseapp.com}
+        VITE_FIREBASE_PROJECT_ID: ${VITE_FIREBASE_PROJECT_ID:-tempocasa-timetracker}
+        VITE_FIREBASE_STORAGE_BUCKET: ${VITE_FIREBASE_STORAGE_BUCKET:-tempocasa-timetracker.appspot.com}
+        VITE_FIREBASE_MESSAGING_SENDER_ID: ${VITE_FIREBASE_MESSAGING_SENDER_ID:-your-sender-id}
+        VITE_FIREBASE_APP_ID: ${VITE_FIREBASE_APP_ID:-your-app-id}
+    container_name: tempocasa-frontend
+    restart: unless-stopped
+    ports:
+      - "5173:5173"
+    environment:
+      - NODE_ENV=production
+    depends_on:
+      - backend
+    networks:
+      - tempocasa-network
+
+networks:
+  tempocasa-network:
+    driver: bridge
 
 volumes:
   mysql_data:
