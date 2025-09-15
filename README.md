@@ -20,28 +20,79 @@ Questo è un prototipo funzionante di un sistema per la gestione di ferie e perm
 ## Stack Tecnologico
 
 - **Backend**: Python, FastAPI
-- **Frontend**: React (Vite)
+- **Frontend**: Vue 3 + Vuetify (attivo)
 - **Database**: MySQL
 - **Email Testing**: MailHog (Docker)
 
+
 ## Installazione e Avvio
 
-### 1. Prerequisiti
+### 🐳 Opzione 1: Docker Compose (Consigliato)
+
+#### Prerequisiti
 - Docker e Docker Compose installati
+- Configurazione Firebase (per l'autenticazione Google)
+
+#### Configurazione Firebase
+1. Copia il file di esempio delle variabili d'ambiente:
+   ```bash
+   cp docker.env.example .env
+   ```
+
+2. Modifica il file `.env` con le tue credenziali Firebase:
+   - Vai su https://console.firebase.google.com
+   - Seleziona il tuo progetto
+   - Vai in Settings > Project settings
+   - Copia i valori dalla sezione "Your apps"
+   - Incolla i valori nel file `.env`
+
+#### Avvia l'intero stack con un comando
+```bash
+# Nella directory principale del progetto
+docker-compose up -d --build
+```
+
+Questo avvierà automaticamente:
+- **MySQL** su porta `3306`
+- **MailHog** su porta `1025` (SMTP) e `8025` (Web UI)
+- **Backend FastAPI** su porta `8000`
+- **Frontend React** su porta `5173`
+
+**Nota**: Al primo avvio, attendi che MySQL sia completamente inizializzato prima che il backend possa connettersi.
+
+#### Gestione dei container
+```bash
+# Visualizza i container in esecuzione
+docker-compose ps
+
+# Visualizza i log di un servizio specifico
+docker-compose logs -f backend
+docker-compose logs -f frontend
+
+# Riavvia un servizio
+docker-compose restart backend
+
+# Ferma tutto
+docker-compose down
+
+# Ferma e rimuovi anche i volumi (attenzione: cancella il database!)
+docker-compose down -v
+```
+
+### 💻 Opzione 2: Sviluppo Locale (Senza Docker per Backend/Frontend)
+
+#### Prerequisiti
+- Docker e Docker Compose (per MySQL e MailHog)
 - Python 3.10+
 - Node.js 16+
 
-### 2. Avvia i servizi Docker (MySQL + MailHog)
+#### 1. Avvia solo i servizi di supporto
 ```bash
-# Nella directory principale del progetto
-docker-compose up -d
+# Avvia solo MySQL e MailHog
+docker-compose up -d mysql mailhog
 ```
 
-Questo avvierà:
-- **MySQL** su porta `3306`
-- **MailHog** su porta `1025` (SMTP) e `8025` (Web UI)
-
-### 3. Configura il Backend
+#### 2. Configura il Backend
 ```bash
 cd backend
 python3 -m venv venv
@@ -52,22 +103,17 @@ source venv/bin/activate
 
 pip install -r requirements.txt
 
-# Crea il file .env (se non esiste)
-cp .env.example .env 2>/dev/null || echo "Crea manualmente il file .env"
+# Crea il file .env
 ```
 
-Aggiungi al file `backend/.env`:
+Crea `backend/.env`:
 ```env
-# Database
-DATABASE_URL=mysql+pymysql://timeoff:timeoff123@localhost/timeoffdb
-
-# JWT Secret
-SECRET_KEY=your-secret-key-here
-
-# Google OAuth
-GOOGLE_CLIENT_ID=your-google-client-id
-
-# MailHog (per sviluppo locale)
+DATABASE_URL=mysql://user:password@localhost:3306/dbname
+SECRET_KEY=your-secret-key-change-this-in-production
+ALGORITHM=HS256
+ACCESS_TOKEN_EXPIRE_MINUTES=30
+GOOGLE_CLIENT_ID=403868323138-fnb6c48jojgst876jcrmkviipe9ujpj5.apps.googleusercontent.com
+CORS_ORIGINS=http://localhost:5173,http://localhost:3000
 SMTP_HOST=localhost
 SMTP_PORT=1025
 SMTP_USER=noreply@tempocasa-timetracker.local
@@ -81,23 +127,14 @@ alembic upgrade head
 uvicorn app.main:app --reload
 ```
 
-### 4. Configura il Frontend
+#### 3. Configura il Frontend Vue
 ```bash
-cd frontend
+cd vue-frontend
 npm install
-
-# Crea il file .env (se non esiste)
-cp .env.example .env 2>/dev/null || echo "Crea manualmente il file .env"
-```
-
-Configura `frontend/.env` con i tuoi valori Firebase e API.
-
-Avvia il frontend:
-```bash
 npm run dev
 ```
 
-### 5. Accedi all'Applicazione
+### 📍 Accedi all'Applicazione
 - **Frontend**: http://localhost:5173
 - **Backend API**: http://localhost:8000/docs
 - **MailHog Web UI**: http://localhost:8025
@@ -112,9 +149,9 @@ MailHog cattura tutte le email inviate dall'applicazione per il testing in svilu
 3. Le email NON vengono inviate realmente
 
 ### Casi d'Uso
-- **Manager approva/rifiuta**: L'email di notifica al dipendente viene catturata
-- **Dipendente crea richiesta**: Le notifiche ai manager vengono catturate
-- **Motivazione rifiuto**: Visibile nell'email catturata
+- **Manager approva/rifiuta**: l'email di notifica al dipendente viene catturata
+- **Dipendente crea richiesta**: le notifiche ai manager vengono catturate
+- **Motivazione rifiuto**: visibile nell'email catturata
 
 ### Comandi Utili
 ```bash
