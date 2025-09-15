@@ -24,17 +24,14 @@ def create_user(
     user: schemas.UserCreate,
     is_manager: bool = False,
     is_superuser: bool = False,
-    unit_id: int | None = None,
-    full_name: str | None = None,
 ):
     hashed_password = pwd_context.hash(user.password)
     db_user = models.User(
         email=user.email,
         hashed_password=hashed_password,
-        full_name=user.full_name or full_name,
+        full_name=user.full_name,
         is_manager=is_manager,
         is_superuser=is_superuser,
-        unit_id=unit_id,
     )
     db.add(db_user)
     db.commit()
@@ -84,7 +81,6 @@ def get_requests_for_manager(db: Session, manager: models.User):
     if not unit_ids:
         return []
 
-    # get all users that belong to the units managed by this manager
     managed_users = (
         db.query(models.User)
         .join(models.user_units)
@@ -168,7 +164,6 @@ def update_user_manager(
         )
         user.managed_units = managed_units
 
-    # update member units (units the user belongs to)
     if member_unit_ids is not None:
         member_units = (
             db.query(models.Unit).filter(models.Unit.id.in_(member_unit_ids)).all()

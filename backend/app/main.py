@@ -11,7 +11,7 @@ Database tables are managed via Alembic migrations.
 """
 # Base.metadata.create_all(bind=engine)
 
-app = FastAPI(title="Holidays and TimeOff Management API")
+app = FastAPI(title="Timetracker Management API")
 
 app.add_middleware(
     CORSMiddleware,

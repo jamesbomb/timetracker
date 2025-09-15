@@ -67,7 +67,7 @@ services:
 
   frontend:
     build:
-      context: ./frontend
+      context: ./vue-frontend
       dockerfile: Dockerfile
       args:
         VITE_API_URL: http://localhost:8000

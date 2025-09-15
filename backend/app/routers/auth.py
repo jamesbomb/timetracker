@@ -41,7 +41,13 @@ def google_login(google_token: schemas.GoogleLogin, db: Session = Depends(get_db
 
         random_pwd = os.urandom(16).hex()
         user_in = UserCreate(email=email, password=random_pwd, full_name=full_name)
-        user = crud.create_user(db, user_in, full_name=full_name)
+        user = crud.create_user(db, user_in)
+    else:
+        # Aggiorna il full_name se è cambiato o se era vuoto
+        if full_name and (not user.full_name or user.full_name != full_name):
+            user.full_name = full_name
+            db.commit()
+            db.refresh(user)
     access_token = crud.create_access_token(
         data={"sub": user.email},
         expires_delta=timedelta(minutes=auth_module.ACCESS_TOKEN_EXPIRE_MINUTES),
